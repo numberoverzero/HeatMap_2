@@ -1,0 +1,24 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeatMap", "HeatMap\HeatMap\HeatMap.csproj", "{80866541-9F36-40A8-AD0B-07B546003FED}"
+EndProject
+Project("{96E2B04D-8817-42C6-938A-82C39BA4D311}") = "HeatMapContent", "HeatMap\HeatMapContent\HeatMapContent.contentproj", "{F92B2D9E-3240-40E7-9D03-8F9E68F19CFB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{80866541-9F36-40A8-AD0B-07B546003FED}.Debug|x86.ActiveCfg = Debug|x86
+		{80866541-9F36-40A8-AD0B-07B546003FED}.Debug|x86.Build.0 = Debug|x86
+		{80866541-9F36-40A8-AD0B-07B546003FED}.Release|x86.ActiveCfg = Release|x86
+		{80866541-9F36-40A8-AD0B-07B546003FED}.Release|x86.Build.0 = Release|x86
+		{F92B2D9E-3240-40E7-9D03-8F9E68F19CFB}.Debug|x86.ActiveCfg = Debug|x86
+		{F92B2D9E-3240-40E7-9D03-8F9E68F19CFB}.Release|x86.ActiveCfg = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
