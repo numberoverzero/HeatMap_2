@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using Engine;
+using Engine.Utility;
 
 namespace HeatMap
 {
@@ -34,8 +35,8 @@ namespace HeatMap
         int size;
         Map map;
         bool colored = true;
-        Pen pen = new Pen(3, 0, 0.1f);
-        Pen subPen = new Pen(3, 0, -0.1f);
+        Pen pen = new Pen(15, 0, 0.03f);
+        Pen subPen = new Pen(15, 0, -0.03f);
 
 
         public Game()
@@ -75,6 +76,7 @@ namespace HeatMap
         protected override void LoadContent()
         {
             batch = new SpriteBatch(GraphicsDevice);
+            ShaderUtil.LoadContent(GraphicsDevice);
             camera = new Camera(GraphicsDevice.Viewport);
             size = (int)Math.Pow(2, resolution) + 1; 
             Map.LoadContent(Content, GraphicsDevice);

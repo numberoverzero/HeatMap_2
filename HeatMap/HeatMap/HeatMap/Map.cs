@@ -119,13 +119,10 @@ namespace HeatMap
                 intensityColors[i] = new Color(value, value, value, value);
             }
             intensityTexture.SetData(intensityColors);
+
             GraphicsDevice.Textures[0] = intensityTexture;
             GraphicsDevice.Textures[1] = colorMaps[colorMapIndex];
-
-            GraphicsDevice.SetRenderTarget(coloredTextureCache);
-            batch.Begin(0, BlendState.Opaque, null, null, null, ColorMapEffect);
-            batch.Draw(intensityTexture, new Rectangle(0, 0, width, height), Color.White);
-            batch.End();
+            ShaderUtil.DrawFullscreenQuad(intensityTexture, coloredTextureCache, BlendState.AlphaBlend, ColorMapEffect);
             GraphicsDevice.SetRenderTarget(null);
         }
 

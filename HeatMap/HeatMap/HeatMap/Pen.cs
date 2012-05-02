@@ -27,9 +27,13 @@ namespace HeatMap
             // we'll have an entire extra row to check that we didn't need to.  However, (int)(0.5 + 5.5 - 3) = 3 and we know 3 will be checked.
             int min_x = (int)(0.5f + position.X - Radius);
             int min_y = (int)(0.5f + position.Y - Radius);
+            min_x = Math.Max(min_x, 0);
+            min_y = Math.Max(min_y, 0);
 
             int max_x = (int)(position.X + Radius);
             int max_y = (int)(position.Y + Radius);
+            max_x = Math.Min(max_x, array.GetWidth()-1);
+            max_y = Math.Min(max_y, array.GetHeight()-1);
 
             float dist2, pct, offset, initial;
             // y is row counter, so it iterates over vertical

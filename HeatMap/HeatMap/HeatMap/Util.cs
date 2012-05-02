@@ -73,6 +73,29 @@ namespace Engine.Utility
         }
     }
 
+    public static class ShaderUtil
+    {
+        static GraphicsDevice graphicsDevice;
+        static SpriteBatch spriteBatch;
+
+        public static void LoadContent(GraphicsDevice graphicsDevice)
+        {
+            ShaderUtil.graphicsDevice = graphicsDevice;
+            ShaderUtil.spriteBatch = new SpriteBatch(graphicsDevice);
+        }
+        public static void DrawFullscreenQuad(Texture2D texture, RenderTarget2D renderTarget, BlendState blendState, Effect effect)
+        {
+            graphicsDevice.SetRenderTarget(renderTarget);
+            DrawFullscreenQuad(texture, blendState, renderTarget.Width, renderTarget.Height, effect);
+        }
+
+        public static void DrawFullscreenQuad(Texture2D texture, BlendState blendState, int width, int height, Effect effect)
+        {
+            spriteBatch.Begin(0, blendState, null, null, null, effect);
+            spriteBatch.Draw(texture, new Rectangle(0, 0, width, height), Color.White);
+            spriteBatch.End();
+        }
+    }
     public static class BasicShapes
     {
         private static GraphicsDevice graphicsDevice;
