@@ -29,6 +29,11 @@ namespace HeatMap
         RenderTarget2D intensityTexture;
         
         bool _dirty;
+        bool _generating;
+        public bool IsGenerating
+        {
+            get { return _generating; }
+        }
 
         public static Texture2D DefaultColorMap;
         List<Texture2D> colorMaps;
@@ -57,6 +62,7 @@ namespace HeatMap
             this.width = width;
             this.height = height;
             _dirty = true;
+            _generating = false;
 
             coloredTextureCache = ColorTexture.CreateRenderTarget(GraphicsDevice, width, height, true);
             intensityTextureCache = ColorTexture.CreateRenderTarget(GraphicsDevice, width, height, true);
@@ -127,11 +133,14 @@ namespace HeatMap
 
         public void GenerateRandomHeight()
         {
+            if (_generating) return;
+            _generating = true;
             Array2D array = new Array2D(width, height, 0);
             Action onComplete = () =>
             {
                 intensityTexture.SetData(array.AsAlphaMap());
                 _dirty = true;
+                _generating = false;
             }; 
             
             MapGenerator.ThreadedGenerateRandomHeight(array, MapGenerator.HeightFunction, onComplete);

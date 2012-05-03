@@ -15,9 +15,9 @@ namespace HeatMap
 
         public Pen(float radius, float min, float max)
         {
-            Radius = radius;
             Min = min;
             Max = max;
+            Radius = radius;
         }
     }
 }

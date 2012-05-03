@@ -13,6 +13,7 @@ namespace HeatMap
     public static class MapGenerator
     {
         static Random random = new Random(0);
+        static Thread generatorThread;
 
         public static void GenerateRandomHeight(Array2D array, Func<float, float, int, float> noiseFunction)
         {
@@ -129,10 +130,14 @@ namespace HeatMap
             array.Normalize(0,1);
         }
 
-        public static void ThreadedGenerateRandomHeight(Array2D array, Func<float, float, int, float> noiseFunction, Action onComplete)
+        public static void ThreadedGenerateRandomHeight(Array2D array, Func<float, float, int, float> noiseFunction, Action onComplete=null)
         {
-            Thread t = new Thread(() => { GenerateRandomHeight(array, noiseFunction); onComplete(); });
-            t.Start();
+            if (generatorThread != null) 
+                return;
+            if (onComplete == null) 
+                onComplete = FunctionUtils.NoneAction;
+            generatorThread = new Thread(() => { GenerateRandomHeight(array, noiseFunction); onComplete(); generatorThread = null; });
+            generatorThread.Start();
         }
 
         public static float HeightFunction(float min, float max, int iteration)

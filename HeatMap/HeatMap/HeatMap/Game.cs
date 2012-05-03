@@ -24,6 +24,7 @@ namespace HeatMap
     {
         
         GraphicsDeviceManager graphics;
+        Texture2D pixel1x1;
         SpriteBatch batch;
         SpriteFont font;
 
@@ -33,7 +34,7 @@ namespace HeatMap
         Camera camera;
         Input input;
 
-        int resolution = 9;
+        int resolution = 11;
         int size;
         Map map;
         bool colored = true;
@@ -83,8 +84,11 @@ namespace HeatMap
         protected override void LoadContent()
         {
             batch = new SpriteBatch(GraphicsDevice);
-            font = Content.Load<SpriteFont>("DebugFont"); 
-            
+            font = Content.Load<SpriteFont>("DebugFont");
+
+            pixel1x1 = new Texture2D(GraphicsDevice, 1, 1);
+            pixel1x1.SetData(new Color[] { Color.White });
+
             ShaderUtil.LoadContent(GraphicsDevice); 
             
             camera = new Camera(GraphicsDevice.Viewport);
@@ -171,6 +175,7 @@ namespace HeatMap
             batch.End();
 
             DrawPenInfo();
+            if (map.IsGenerating) DrawGenerating();
             camera.AdvanceFrame();
             base.Draw(gameTime);
         }
@@ -179,10 +184,29 @@ namespace HeatMap
         {
             string textFmt = "Position: ({0:0.00}, {1:0.00})\nRadius: {2:0.000}\nPressure: {3:0.00000}";
             string text = String.Format(textFmt, mousePos.X, mousePos.Y, pen.Radius, pen.Max);
-            batch.Begin();
-            batch.DrawString(font, text, Vector2.Zero, Color.White);
-            batch.End();
+            Vector2 textDimensions = font.MeasureString(text);
+            Vector2 screenDimensions = new Vector2(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
+            Vector2 textPos = new Vector2(0, screenDimensions.Y - textDimensions.Y);
+            DrawStringWithBackground(text, textPos);
 
+        }
+
+        void DrawGenerating()
+        {
+            string text = "Generating...";
+            Vector2 textDimensions = font.MeasureString(text);
+            Vector2 screenDimensions = new Vector2(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
+            Vector2 textPos = screenDimensions - textDimensions;
+            DrawStringWithBackground(text, textPos);
+        }
+
+        void DrawStringWithBackground(string text, Vector2 textPos)
+        {
+            Vector2 textDimensions = font.MeasureString(text);
+            batch.Begin();
+            batch.Draw(pixel1x1, textPos, null, Color.Gray, 0, Vector2.Zero, textDimensions, SpriteEffects.None, 0);
+            batch.DrawString(font, text, textPos, Color.White);
+            batch.End();
         }
     }
 }

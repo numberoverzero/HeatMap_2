@@ -4,9 +4,20 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 using System.Linq;
-
+using System.Threading;
 namespace Engine.Utility
 {
+    public static class FunctionUtils
+    {
+        /// <summary>
+        /// Action that does nothing.
+        /// </summary>
+        public static Action NoneAction
+        {
+            get { return () => { }; }
+        }
+    }
+
     /// <summary>
     /// Creates single color textures (i.e. for drawing rectangles).
     /// </summary>
