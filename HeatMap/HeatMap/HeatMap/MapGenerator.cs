@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Engine.Utility;
@@ -11,12 +12,13 @@ namespace HeatMap
 {
     public static class MapGenerator
     {
-        private static void GenerateRandomHeight(Array2D array, Func<float, float, int, float> noiseFunction)
+        static Random random = new Random(0);
+
+        public static void GenerateRandomHeight(Array2D array, Func<float, float, int, float> noiseFunction)
         {
             float noiseMin = -1;
             float noiseMax = 1;
-            for (int i = 0; i < array.Width * array.Height; i++)
-                array.Data[i] = 0;
+            array.Clear(0);
             float corner = noiseFunction(noiseMin, noiseMax, 0);
             array[0, 0] = array[0, array.Height - 1] = array[array.Width - 1, 0] = array[array.Width - 1, array.Height - 1] = corner;
 
@@ -127,10 +129,17 @@ namespace HeatMap
             array.Normalize(0,1);
         }
 
-        public static void ThreadedGenerateRandomHeight(Array2D array, Func<float, float, int, float> noiseFunction)
+        public static void ThreadedGenerateRandomHeight(Array2D array, Func<float, float, int, float> noiseFunction, Action onComplete)
         {
-            Thread t = new Thread(() => { GenerateRandomHeight(array, noiseFunction); });
+            Thread t = new Thread(() => { GenerateRandomHeight(array, noiseFunction); onComplete(); });
             t.Start();
+        }
+
+        public static float HeightFunction(float min, float max, int iteration)
+        {
+            float powerOffset = (float)Math.Pow(2, -iteration);
+            float randomValue = (float)random.NextDouble();
+            return MathHelper.Lerp(min * powerOffset, max * powerOffset, randomValue);
         }
     }
 }

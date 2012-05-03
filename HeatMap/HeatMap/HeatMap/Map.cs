@@ -123,6 +123,23 @@ namespace HeatMap
 
         #endregion
 
+        #region Random Generation
+
+        public void GenerateRandomHeight()
+        {
+            Array2D array = new Array2D(width, height, 0);
+            Action onComplete = () =>
+            {
+                intensityTexture.SetData(array.AsAlphaMap());
+                _dirty = true;
+            }; 
+            
+            MapGenerator.ThreadedGenerateRandomHeight(array, MapGenerator.HeightFunction, onComplete);
+            
+        }
+
+        #endregion
+
         #region ColorMaps
 
         public void AddColorMap(Texture2D colorMap)

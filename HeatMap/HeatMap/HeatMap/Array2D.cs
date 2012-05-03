@@ -36,10 +36,11 @@ namespace HeatMap
         {
             this.width = width;
             this.height = height;
-            Initialize(initalValue);
+            this.data = new float[width * height];
+            Clear(initalValue);
         }
 
-        private void Initialize(float value)
+        public void Clear(float value)
         {
             for (int i = 0; i < width * height; i++)
                 data[i] = value;
@@ -57,6 +58,14 @@ namespace HeatMap
                 t = (data[i] - minDataValue) / dataRange;
                 data[i] = MathHelper.Lerp(min, max, t);
             }
+        }
+
+        public Color[] AsAlphaMap()
+        {
+            Color[] alphaMap = new Color[width * height];
+            for (int i = 0; i < width * height; i++)
+                alphaMap[i] = new Color(0, 0, 0, data[i]);
+            return alphaMap;
         }
     }
 }

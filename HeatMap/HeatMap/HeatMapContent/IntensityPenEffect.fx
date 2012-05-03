@@ -16,7 +16,7 @@ float4 PixelShaderF(float2 texCoord : TEXCOORD0) : COLOR0
 	float baseIntensity = tex2D(IntensitySampler, texCoord).a;
 	float pressureOffset = GetPressureAt(texCoord);
 	float value = clamp(baseIntensity+pressureOffset, 0, 1);
-	return float4(value,value,value,value);
+	return float4(0,0,0,value);
 }
 
 

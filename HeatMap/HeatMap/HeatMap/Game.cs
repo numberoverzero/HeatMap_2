@@ -33,7 +33,7 @@ namespace HeatMap
         Camera camera;
         Input input;
 
-        int resolution = 11;
+        int resolution = 9;
         int size;
         Map map;
         bool colored = true;
@@ -45,7 +45,7 @@ namespace HeatMap
         {
             IsMouseVisible = true;
             graphics = new GraphicsDeviceManager(this);
-            graphics.PreferredBackBufferHeight = graphics.PreferredBackBufferWidth = 1024;
+            graphics.PreferredBackBufferHeight = graphics.PreferredBackBufferWidth = 512;
             Content.RootDirectory = "Content";
         }
 
@@ -67,6 +67,7 @@ namespace HeatMap
             // ColorMaps
             input.AddKeyBinding("cycle_map", Keys.Space);
             input.AddKeyBinding("toggle_coloring", Keys.Tab);
+            input.AddKeyBinding("generate_random_map", Keys.Enter);
 
             // Pen
             input.AddKeyBinding("pen_add", MouseButton.Left);
@@ -87,6 +88,7 @@ namespace HeatMap
             ShaderUtil.LoadContent(GraphicsDevice); 
             
             camera = new Camera(GraphicsDevice.Viewport);
+            cameraPos = new Vector2(256);
             
             size = (int)Math.Pow(2, resolution) + 1; 
             Map.LoadContent(Content, GraphicsDevice);
@@ -123,6 +125,9 @@ namespace HeatMap
 
             if (input.IsKeyBindingPress("toggle_coloring"))
                 colored = !colored;
+            if (input.IsKeyBindingPress("generate_random_map"))
+                map.GenerateRandomHeight();
+
             if (input.IsKeyBindingActive("pen_add"))
             {
                 map.ApplyPen(pen, mousePos);
