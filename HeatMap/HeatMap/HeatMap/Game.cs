@@ -25,18 +25,20 @@ namespace HeatMap
         
         GraphicsDeviceManager graphics;
         SpriteBatch batch;
+        SpriteFont font;
 
         float panAmount = 4.0f; 
-        Vector2 cameraPos; 
+        Vector2 cameraPos;
+        Vector2 mousePos;
         Camera camera;
         Input input;
 
-        int resolution = 7;
+        int resolution = 11;
         int size;
         Map map;
         bool colored = true;
-        Pen pen = new Pen(15, 0, 0.03f);
-        Pen subPen = new Pen(15, 0, -0.03f);
+        Pen pen = new Pen(100, 0, 0.04f);
+        Pen subPen = new Pen(100, 0, -0.04f);
 
 
         public Game()
@@ -62,13 +64,16 @@ namespace HeatMap
             input.AddKeyBinding("pan_right", Keys.D);
 
             // ColorMaps
-            input.AddKeyBinding("generate", Keys.Space);
-            input.AddKeyBinding("cycle_map", Keys.Tab);
-            input.AddKeyBinding("toggle_coloring", Keys.Space, Modifier.Shift);
+            input.AddKeyBinding("cycle_map", Keys.Space);
+            input.AddKeyBinding("toggle_coloring", Keys.Tab);
 
             // Pen
             input.AddKeyBinding("pen_add", MouseButton.Left);
             input.AddKeyBinding("pen_sub", MouseButton.Right);
+            input.AddKeyBinding("pen_size_inc", Keys.Up);
+            input.AddKeyBinding("pen_size_dec", Keys.Down);
+            input.AddKeyBinding("pen_pressure_inc", Keys.Right);
+            input.AddKeyBinding("pen_pressure_dec", Keys.Left);
 
             base.Initialize();
         }
@@ -76,10 +81,15 @@ namespace HeatMap
         protected override void LoadContent()
         {
             batch = new SpriteBatch(GraphicsDevice);
-            ShaderUtil.LoadContent(GraphicsDevice);
+            font = Content.Load<SpriteFont>("DebugFont"); 
+            
+            ShaderUtil.LoadContent(GraphicsDevice); 
+            
             camera = new Camera(GraphicsDevice.Viewport);
+            
             size = (int)Math.Pow(2, resolution) + 1; 
             Map.LoadContent(Content, GraphicsDevice);
+            
             map = new Map(size, size);
             map.AddColorMap(Map.DefaultColorMap);
         }
@@ -91,7 +101,9 @@ namespace HeatMap
         protected override void Update(GameTime gameTime)
         {
             camera.Update(gameTime.ElapsedGameTime.Milliseconds / 1000f); 
+            
             input.Update();
+            mousePos = camera.Screen2WorldCoords(input.GetMousePos());
 
             if (input.IsKeyBindingActive("quit"))
                 this.Exit();
@@ -112,16 +124,31 @@ namespace HeatMap
                 colored = !colored;
             if (input.IsKeyBindingActive("pen_add"))
             {
-                Vector2 pos = input.GetMousePos();
-                pos = camera.Screen2WorldCoords(pos);
-                pen.Draw(map, pos);
+                map.ApplyPen(pen, mousePos);
             }
-
             if (input.IsKeyBindingActive("pen_sub"))
             {
-                Vector2 pos = input.GetMousePos();
-                pos = camera.Screen2WorldCoords(pos);
-                subPen.Draw(map, pos);
+                map.ApplyPen(subPen, mousePos);
+            }
+            if (input.IsKeyBindingActive("pen_size_inc"))
+            {
+                pen.Radius *= 1.01f;
+                subPen.Radius *= 1.01f;
+            }
+            if (input.IsKeyBindingActive("pen_size_dec"))
+            {
+                pen.Radius /= 1.01f;
+                subPen.Radius /= 1.01f;
+            }
+            if (input.IsKeyBindingActive("pen_pressure_inc"))
+            {
+                pen.Max *= 1.01f;
+                subPen.Max *= 1.01f;
+            }
+            if (input.IsKeyBindingActive("pen_pressure_dec"))
+            {
+                pen.Max /= 1.01f;
+                subPen.Max /= 1.01f;
             }
                 
 
@@ -137,8 +164,19 @@ namespace HeatMap
             batch.Draw(map.GetTexture(colored), Vector2.Zero, Color.White);
             batch.End();
 
+            DrawPenInfo();
             camera.AdvanceFrame();
             base.Draw(gameTime);
+        }
+
+        void DrawPenInfo()
+        {
+            string textFmt = "Position: ({0:0.00}, {1:0.00})\nRadius: {2:0.000}\nPressure: {3:0.00000}";
+            string text = String.Format(textFmt, mousePos.X, mousePos.Y, pen.Radius, pen.Max);
+            batch.Begin();
+            batch.DrawString(font, text, Vector2.Zero, Color.White);
+            batch.End();
+
         }
     }
 }

@@ -10,36 +10,25 @@ using Engine.Utility;
 
 namespace HeatMap
 {
-    public interface IArray2D
-    {
-        int GetWidth();
-        int GetHeight();
-        void SetWidth(int width);
-        void SetHeight(int height);
-
-        void SetValue(int row, int col, float value);
-        float GetValue(int row, int col);
-    }
-    public class Map : IArray2D
+    public class Map
     {
         #region Fields
 
-        float[] data; 
         int width, height;
-        bool _suppressClamping;
-        bool _dirty;
-        bool _isGenerating;
-        bool IsGenerating
-        {
-            get { return _isGenerating; }
-        }
 
-        public static GraphicsDevice GraphicsDevice; 
+        public static GraphicsDevice GraphicsDevice;
+        public static Effect IntensityPenEffect;
         public static Effect ColorMapEffect;
-        SpriteBatch batch;
 
+        // Cached textures
         RenderTarget2D coloredTextureCache;
-        Texture2D intensityTexture;
+        RenderTarget2D intensityTextureCache;
+        
+        // Used for interactive manipulation
+        RenderTarget2D intensityTextureTemp; 
+        RenderTarget2D intensityTexture;
+        
+        bool _dirty;
 
         public static Texture2D DefaultColorMap;
         List<Texture2D> colorMaps;
@@ -64,195 +53,72 @@ namespace HeatMap
         #endregion
 
         public Map(int width, int height)
-        {
-            batch = new SpriteBatch(GraphicsDevice);
-            
+        {   
             this.width = width;
             this.height = height;
-
-            data = new float[width * height];
-            for (int i = 0; i < width * height; i++) 
-                data[i] = 0;
-
-            _suppressClamping = false;
-            _isGenerating = false;
             _dirty = true;
-            
+
             coloredTextureCache = ColorTexture.CreateRenderTarget(GraphicsDevice, width, height, true);
+            intensityTextureCache = ColorTexture.CreateRenderTarget(GraphicsDevice, width, height, true);
+            intensityTextureTemp = ColorTexture.CreateRenderTarget(GraphicsDevice, width, height, true);
+            intensityTexture = ColorTexture.CreateRenderTarget(GraphicsDevice, width, height, true);
+
             colorMaps = new List<Texture2D>();
             colorMapIndex = 0;
-        }
-
-        public float this[int row, int col]
-        {
-            get { return data[width * row + col]; }
-            set
-            {
-                _dirty = true;
-                if (!_suppressClamping)
-                    value = MathHelper.Clamp(value, 0, 1);
-                data[width * row + col] = value;
-            }
         }
 
         #region GetTexture
 
         public Texture2D GetTexture(bool colored)
         {
-            if (_dirty && !_isGenerating)
-                RenderTextures();
-            if (colored)
-                return coloredTextureCache;
-            return intensityTexture;
+            if (_dirty) RenderTextures();
+            return colored ? coloredTextureCache : intensityTextureCache;
         }
 
         private void RenderTextures()
         {
-            _dirty = false;
-            if(intensityTexture == null)
-                intensityTexture = new Texture2D(GraphicsDevice, width, height);
-            Color[] intensityColors = new Color[width * height];
-            float value;
-            for (int i = 0; i < width * height; i++)
-            {
-                value = data[i];
-                intensityColors[i] = new Color(value, value, value, value);
-            }
-            intensityTexture.SetData(intensityColors);
+            // Pass 1: copy intensityTexture to intensityTextureCache
+            ShaderUtil.DrawFullscreenQuad(intensityTexture, intensityTextureCache, BlendState.Opaque, null);
 
+            // Pass 2: apply ColorMap to intensityTexture and render out to coloredTextureCache
             GraphicsDevice.Textures[0] = intensityTexture;
             GraphicsDevice.Textures[1] = colorMaps[colorMapIndex];
             ShaderUtil.DrawFullscreenQuad(intensityTexture, coloredTextureCache, BlendState.AlphaBlend, ColorMapEffect);
+
+            // Reset the render target
             GraphicsDevice.SetRenderTarget(null);
+
+            _dirty = false;
         }
 
         #endregion
 
-        #region Iterative Diamond-Square Algorithm
+        #region Interaction
 
-        private void GenerateRandomHeight(Func<float, float, int, float> noiseFunction)
+        public void ApplyPen(Pen pen, Vector2 position)
         {
-            float noiseMin = -1;
-            float noiseMax = 1;
-            _suppressClamping = true;
-            for (int i = 0; i < width * height; i++)
-                data[i] = 0;
-            float corner = noiseFunction(noiseMin, noiseMax, 0);
-            this[0, 0] = this[0, height - 1] = this[width - 1, 0] = this[width - 1, height - 1] = corner;
+            EffectParameterCollection parameters = IntensityPenEffect.Parameters;
+            
+            // Transform position coordinates into texture space
+            position.X /= width;
+            position.Y /= height;
 
-            int x_min = 0;
-            int y_min = 0;
-            int x_max = width-1;
-            int y_max = height-1;
+            parameters["pos"].SetValue(position);
+            parameters["radius"].SetValue(pen.Radius / Math.Max(width, height));
+            parameters["minPressure"].SetValue(pen.Min);
+            parameters["maxPressure"].SetValue(pen.Max);
 
-            int side = x_max;
-            int squares = 1;
-            int offset = 1;
+            // Pass 1: apply PenEffect to intensityTexture and render out to intensityTextureTemp
+            GraphicsDevice.Textures[0] = intensityTexture;
+            ShaderUtil.DrawFullscreenQuad(intensityTexture, intensityTextureTemp, BlendState.Opaque, IntensityPenEffect);
 
-            int left, right, top, bottom, dx, dy, midX, midY, temp;
-            while (side > 1){
-                for (int i = 0; i < squares; i++){
-                    for (int j = 0; j < squares; j++){
-                        left = i * side;
-                        right = (i + 1) * side;
-                        top = j * side;
-                        bottom = (j + 1) * side;
+            // Pass 2: copy intensityTextureTemp to intensityTexture
+            ShaderUtil.DrawFullscreenQuad(intensityTextureTemp, intensityTexture, BlendState.Opaque, null);
 
-                        dx = dy = side / 2;
+            // Reset the render target
+            GraphicsDevice.SetRenderTarget(null);
 
-                        midX = left + dx;
-                        midY = top + dy;
-
-                        // Diamond step - create center average for each square
-                        this[midX, midY] = Average(this[left, top],
-                                                   this[left, bottom],
-                                                   this[right, top],
-                                                   this[right, bottom]);
-                        this[midX, midY] += noiseFunction(noiseMin, noiseMax, offset);
-
-                        // Square step - create squares for each diamond
-
-                        // ==============
-                        // Top Square
-                        if (top - dy < y_min)
-                            temp = y_max - dy;
-                        else
-                            temp = top - dy;
-                        this[midX, top] = Average(this[left, top],
-                                                  this[right, top],
-                                                  this[midX, midY],
-                                                  this[midX, temp]);
-                        this[midX, top] += noiseFunction(noiseMin, noiseMax, offset);
-
-                        // Top Wrapping
-                        if (top == y_min)
-                            this[midX, y_max] = this[midX, top];
-
-                        // ==============
-                        // Bottom Square
-                        if (bottom + dy > y_max)
-                            temp = top + dy;
-                        else
-                            temp = bottom - dy;
-                        this[midX, bottom] = Average(this[left, bottom],
-                                                     this[right, bottom],
-                                                     this[midX, midY],
-                                                     this[midX, temp]);
-                        this[midX, bottom] += noiseFunction(noiseMin, noiseMax, offset);
-
-                        // Bottom Wrapping
-                        if (bottom == y_max)
-                            this[midX, y_min] = this[midX, bottom];
-
-                        // ==============
-                        // Left Square
-                        if (left - dx < x_min)
-                            temp = x_max - dx;
-                        else
-                            temp = left - dx;
-                        this[left, midY] = Average(this[left, top],
-                                                   this[left, bottom],
-                                                   this[midX, midY],
-                                                   this[temp, midY]);
-                        this[left, midY] += noiseFunction(noiseMin, noiseMax, offset);
-
-                        // Left Wrapping
-                        if (left == x_min)
-                            this[x_max, midY] = this[left, midY];
-
-                        // ==============
-                        // Right Square
-                        if (right + dx > x_max)
-                            temp = x_min + dx;
-                        else
-                            temp = right + dx;
-                        this[right, midY] = Average(this[right, top],
-                                                    this[right, bottom],
-                                                    this[midX, midY],
-                                                    this[temp, midY]);
-                        this[right, midY] += noiseFunction(noiseMin, noiseMax, offset);
-
-                        // Right Wrapping
-                        if (right == x_max)
-                            this[x_min, midY] = this[right, midY];
-                    }
-                } //End for loops
-                side /= 2;
-                squares *= 2;
-                offset += 1;
-            }
-            Normalize();
-            _suppressClamping = false;
-            _isGenerating = false;
-        }
-
-        public void ThreadedGenerateRandomHeight(Func<float, float, int, float> noiseFunction)
-        {
-            if (_isGenerating) 
-                return;
-            _isGenerating = true;
-            Thread t = new Thread(() => { GenerateRandomHeight(noiseFunction); });
-            t.Start();
+            _dirty = true;
         }
 
         #endregion
@@ -271,65 +137,12 @@ namespace HeatMap
 
         #endregion
 
-        #region Private Helpers
-
-        private void Normalize()
-        {
-            float minValue = data.Min();
-            float maxValue = data.Max();
-            float range = maxValue - minValue;
-            float pct = 0.05f;
-            minValue -= range * pct / 2;
-            maxValue += range * pct / 2;
-            range = maxValue-minValue;
-            for (int i = 0; i < width * height; i++)
-                data[i] = (data[i] - minValue) / range;
-
-            _dirty = true;
-        }
-
-        private static float Average(params float[] values)
-        {
-            return values.Sum() / values.Count();
-        }
-
-        #endregion
-
         public static void LoadContent(ContentManager content, GraphicsDevice device)
         {
             DefaultColorMap = content.Load<Texture2D>("ColorMaps/DefaultColorMap");
             ColorMapEffect = content.Load<Effect>("ColorMapEffect");
+            IntensityPenEffect = content.Load<Effect>("IntensityPenEffect");
             GraphicsDevice = device;
-        }
-
-        public int GetWidth()
-        {
-            return width;
-        }
-
-        public int GetHeight()
-        {
-            return height;
-        }
-
-        public void SetWidth(int width)
-        {
-            this.width = width;
-        }
-
-        public void SetHeight(int height)
-        {
-            this.height = height;
-        }
-
-        public void SetValue(int row, int col, float value)
-        {
-            this[row, col] = value;
-        }
-
-        public float GetValue(int row, int col)
-        {
-            return this[row, col];
         }
     }
 }

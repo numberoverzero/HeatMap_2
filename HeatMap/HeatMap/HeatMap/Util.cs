@@ -293,6 +293,11 @@ namespace Engine.Utility
         {
             return (float)Math.Pow(value, 2);
         }
+
+        public static float Average(params float[] values)
+        {
+            return values.Sum() / values.Count();
+        }
     }
     /// <summary>
     /// Extensions for floats and doubles
