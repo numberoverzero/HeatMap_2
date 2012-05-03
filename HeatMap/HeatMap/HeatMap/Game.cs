@@ -45,6 +45,7 @@ namespace HeatMap
         {
             IsMouseVisible = true;
             graphics = new GraphicsDeviceManager(this);
+            graphics.PreferredBackBufferHeight = graphics.PreferredBackBufferWidth = 1024;
             Content.RootDirectory = "Content";
         }
 
