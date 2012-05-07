@@ -170,5 +170,13 @@ namespace HeatMap
             IntensityPenEffect = content.Load<Effect>("IntensityPenEffect");
             GraphicsDevice = device;
         }
+
+        public void Destroy()
+        {   
+            coloredTextureCache = null;
+            intensityTextureCache = null;
+            intensityTextureTemp = null;
+            intensityTexture = null;
+        }
     }
 }

@@ -34,7 +34,7 @@ namespace HeatMap
         Camera camera;
         Input input;
 
-        int resolution = 11;
+        int resolution = 9;
         int size;
         Map map;
         bool colored = true;
@@ -66,9 +66,9 @@ namespace HeatMap
             input.AddKeyBinding("pan_right", Keys.D);
 
             // ColorMaps
-            input.AddKeyBinding("cycle_map", Keys.Space);
             input.AddKeyBinding("toggle_coloring", Keys.Tab);
-            input.AddKeyBinding("generate_random_map", Keys.Enter);
+            input.AddKeyBinding("cycle_map", Keys.Tab, Modifier.Shift);
+            input.AddKeyBinding("generate_random_map", Keys.Space);
 
             // Pen
             input.AddKeyBinding("pen_add", MouseButton.Left);
@@ -77,6 +77,10 @@ namespace HeatMap
             input.AddKeyBinding("pen_size_dec", Keys.Down);
             input.AddKeyBinding("pen_pressure_inc", Keys.Right);
             input.AddKeyBinding("pen_pressure_dec", Keys.Left);
+
+            //Map Size
+            input.AddKeyBinding("map_size_inc", Keys.OemCloseBrackets);
+            input.AddKeyBinding("map_size_dec", Keys.OemOpenBrackets);
 
             base.Initialize();
         }
@@ -94,11 +98,8 @@ namespace HeatMap
             camera = new Camera(GraphicsDevice.Viewport);
             cameraPos = new Vector2(256);
             
-            size = (int)Math.Pow(2, resolution) + 1; 
             Map.LoadContent(Content, GraphicsDevice);
-            
-            map = new Map(size, size);
-            map.AddColorMap(Map.DefaultColorMap);
+            AdjustSize(0);
         }
 
         protected override void UnloadContent()
@@ -160,10 +161,31 @@ namespace HeatMap
                 pen.Max /= 1.01f;
                 subPen.Max /= 1.01f;
             }
+
+            if (input.IsKeyBindingPress("map_size_inc"))
+                AdjustSize(1);
+            if (input.IsKeyBindingPress("map_size_dec"))
+                AdjustSize(-1);
                 
 
             camera.LockPosition(cameraPos, true);
             base.Update(gameTime);
+        }
+
+        /// <summary>
+        /// Adjusts the size of the map.  If there is already a map created, clears the old map and
+        /// initializes a new one.  None of the data from the old map is preserved.
+        /// </summary>
+        /// <param name="offset"></param>
+        private void AdjustSize(int offset)
+        {
+            resolution += offset;
+            resolution = (int)MathHelper.Clamp(resolution, 1, 11);
+            size = (int)Math.Pow(2, resolution) + 1;
+            if (map != null)
+                map.Destroy();
+            map = new Map(size, size);
+            map.AddColorMap(Map.DefaultColorMap);
         }
 
         protected override void Draw(GameTime gameTime)
@@ -182,8 +204,8 @@ namespace HeatMap
 
         void DrawPenInfo()
         {
-            string textFmt = "Position: ({0:0.00}, {1:0.00})\nRadius: {2:0.000}\nPressure: {3:0.00000}";
-            string text = String.Format(textFmt, mousePos.X, mousePos.Y, pen.Radius, pen.Max);
+            string textFmt = "Map Size: ({0}, {1})\nPosition: ({2:0.00}, {3:0.00})\nRadius: {4:0.000}\nPressure: {5:0.00000}";
+            string text = String.Format(textFmt, size, size, mousePos.X, mousePos.Y, pen.Radius, pen.Max);
             Vector2 textDimensions = font.MeasureString(text);
             Vector2 screenDimensions = new Vector2(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
             Vector2 textPos = new Vector2(0, screenDimensions.Y - textDimensions.Y);
